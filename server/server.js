@@ -1,6 +1,8 @@
 var app = require('express')();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
+var _ = require('underscore');
+var fs = require('fs')
 const {spawn} = require('child_process');
 var bodyParser = require('body-parser');
 
@@ -65,16 +67,27 @@ var state = {
   amptype: 'Clean'
 }
 
+var presets = {
+
+}
+
+state = JSON.parse(fs.readFileSync("state.json"))
+presets = JSON.parse(fs.readFileSync("presets.json"))
+
+var save = _.throttle(function() {
+  fs.writeFileSync("state.json",JSON.stringify(state,null,'  '));
+},1000)
+
 io.on('connection', function(socket) {
   console.log("Connection");
   socket.emit('state', state);
   socket.on('set', (values) => {
     console.log(values)
     for (var key in values) {
-      console.log(key + " = " + values[key]);
       state[key] = values[key];
     }
-    io.emit('state', state);
+    socket.broadcast.emit('set', values);
+    save();
   });
 });
 
