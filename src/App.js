@@ -74,7 +74,7 @@ class ButtonSelector extends React.PureComponent {
     }
     var buttons = this.options().map((p, index) => {
       var c = "btn";
-      if (this.props.selection === p) {
+      if (this.props.selection === index) {
         c = c + " btn-success"
       }
       return <button key={p} className={c} onClick={() => this.props.onChange(p, index)}>{this.prefix()} {p}</button>
@@ -146,7 +146,7 @@ class Modes extends ButtonSelector {
     return null;
   }
   options() {
-    return ["Presets", "Instrument", "Stomp Box", "Amp", "Effect"]
+    return ["Presets", "Inst/Stomp Box", "Amp", "Effect"]
   }
 }
 
@@ -195,11 +195,14 @@ class ParameterMapper extends React.PureComponent {
     var effect_mapping = this.props.effectMapping;
     var p1 = this.props.paramPrefix + "P1"
     var p2 = this.props.paramPrefix + "P2"
-    var parameter_key = this.props.parameterKey
+    var selected_index = this.props.selectedIndex;
+    if(selected_index < 0) {
+      selected_index = 0;
+    }
 
-    var params = effect_mapping.find((e) => e[0] === serverState[parameter_key])
+    var params = effect_mapping[selected_index]
     if (!params) {
-      console.log("Error: Couldn't find effect mapping for " + parameter_key);
+      console.log("Error: Couldn't find effect mapping for " + selected_index);
       params = [p1, p2]
     }
     var values = {}
@@ -210,7 +213,7 @@ class ParameterMapper extends React.PureComponent {
     }
     return (
       <div>
-        <ButtonSelector onChange={(t, index) => this.props.onChangeType(t, index)} title={this.props.title} selection={serverState[parameter_key]} options={effect_mapping.map((e) => e[0])}/>
+        <ButtonSelector onChange={(t, index) => this.props.onChangeType(t, index)} title={this.props.title} selection={selected_index} options={effect_mapping.map((e) => e[0])}/>
         <Parameters values={values} onChange={(param, value) => this.props.onChangeParameter(param === params[1][0]
           ? p1
           : p2, value)} parameters={params[1]}/>
@@ -225,7 +228,7 @@ ParameterMapper.defaultProps = {
 
 ParameterMapper.propTypes = {
   effectMapping: PropTypes.array.isRequired,
-  parameterKey: PropTypes.string.isRequired,
+  selectedIndex: PropTypes.number.isRequired,
   serverState: PropTypes.object.isRequired,
   title: PropTypes.string.isRequired
 }
@@ -235,6 +238,7 @@ export class InsideApp extends Component {
     super(props);
     this.state = {
       mode: 'Amp',
+      mode_index: 2,
       serverState: props.serverState
     }
   }
@@ -257,8 +261,8 @@ export class InsideApp extends Component {
     this.setState({serverState: nextProps.serverState})
   }
 
-  setMode = (mode) => {
-    this.setState({mode: mode})
+  setMode = (mode,index) => {
+    this.setState({mode: mode, mode_index: index})
   }
 
   patch(num) {
@@ -276,99 +280,97 @@ export class InsideApp extends Component {
     var serverState = this.state.serverState;
     if (mode === 'Presets') {
       mode_content = <Patch onChange={(num) => this.setValue('preset', num)} selection={serverState.preset}/>
-    } else if (mode === 'Stomp Box') {
-      mode_content = <ParameterMapper serverState={serverState} parameterKey="stompbox" title="Stomp Box" paramPrefix="SB_" onChangeType={(v) => this.setValue('stompbox', v)} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={[
-        ["BYPASS", []
-        ],
-        [
-          "12 String",
-          ["Body", "Brightness"]
-        ],
-        [
-          "7 String",
-          ["Body", "String"]
+    } else if (mode === 'Inst/Stomp Box') {
+      var stompboxes = [
+        ["BYPASS", [],10
         ],
         [
           "Acoustic 1",
-          ["Body", "String"]
+          ["Body", "String"],8
         ],
         [
           "Acoustic 2",
-          ["Body", "String"]
+          ["Body", "String"],9
         ],
         [
-          "Baritone",
-          ["Body", "String"]
+          "12 String",
+          ["Body", "Brightness"],6
         ],
         [
-          "BASS",
-          ["Body", "String"]
-        ],
-        [
-          "EVIO",
-          ["Color", "Glide"]
+          "7 String",
+          ["Body", "String"],7
         ],
         [
           "Resonator",
-          ["Body", "String"]
+          ["Body", "String"],4
         ],
         [
           "SITAR",
-          ["Body", "String"]
+          ["Body", "String"],5
         ],
         [
-          "TSC",
-          ["Drive", "Level"]
-        ],
-        [
-          "Fuzz",
-          ["Drive", "Level"]
-        ],
-        [
-          "Comp",
-          ["Sensitivity", "Level"]
-        ],
-        [
-          "Slap",
-          ["Time", "Mix"]
-        ],
-        ["AutoWah", ["Speed Depth"]
-        ],
-        [
-          "Analog Phase",
-          ["Speed", "Depth"]
-        ],
-        [
-          "Analog Flange",
-          ["Speed", "Depth"]
+          "EVIO",
+          ["Color", "Glide"],2
         ],
         [
           "Synth",
-          ["Attack", "Glide"]
+          ["Attack", "Glide"],3
         ],
         [
-          "Slicer",
-          ["Speed", "Width"]
-        ],
-        ["Chorus", ["Speed Depth"]
+          "Baritone",
+          ["Body", "String"],0
         ],
         [
-          "UVB",
-          ["Speed", "Depth"]
+          "BASS",
+          ["Body", "String"],1
         ],
         [
-          "Ring",
-          ["Frequency", "Mix"]
+          "TSC",
+          ["Drive", "Level"],11
         ],
         [
-          "Vibrato",
-          ["Speed", "Depth"]
+          "Fuzz",
+          ["Drive", "Level"],12
+        ],
+        [
+          "Comp",
+          ["Sensitivity", "Level"],13
         ],
         [
           "Boost",
-          ["Drive", "Level"]
+          ["Drive", "Level"],14
+        ],
+        [
+          "Analog Phase",
+          ["Speed", "Depth"],15
+        ],
+        [
+          "Analog Flange",
+          ["Speed", "Depth"],16
+        ],
+        ["AutoWah", ["Speed","Depth"],17
+        ],
+        [
+          "Slicer",
+          ["Speed", "Width"],18
+        ],
+        ["A Chorus", ["Speed Depth"],19
+        ],
+        [
+          "UVB",
+          ["Speed", "Depth"],20
+        ],
+        [
+          "Rmd",
+          ["P0", "P1"],21
+        ],
+        [
+          "Slap",
+          ["Time", "Mix"],22
         ]
-      ]}/>
+      ]
+      var selected_stompbox = stompboxes.findIndex((sb) => sb[2] === serverState.stompbox)
+      mode_content = <ParameterMapper serverState={serverState} selectedIndex={selected_stompbox} title="Stomp Box" paramPrefix="SB_" onChangeType={(v,index) => this.setValue('stompbox', stompboxes[index][2], stompboxes[index][3])} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={stompboxes}/>
 
     } else if (mode === 'Effect') {
       var effect_mapping = [
@@ -453,12 +455,14 @@ export class InsideApp extends Component {
           4
         ]
       ]
-      mode_content = (<ParameterMapper serverState={serverState} parameterKey="Effect" title="Effect" paramPrefix="" onChangeType={(v, index) => this.setValue('Effect', v, effect_mapping[index][2])} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={effect_mapping}/>)
-    } else if (mode === 'Instrument') {} else if (mode === 'Amp') {
-      mode_content = <Instrument/>
+      console.log(serverState.Effect)
+      var selected_index = effect_mapping.findIndex((e) => e[2] === serverState.Effect)
+      mode_content = (<ParameterMapper serverState={serverState} selectedIndex={selected_index} title="Effect" paramPrefix="" onChangeType={(v, index) => this.setValue('Effect', effect_mapping[index][2], effect_mapping[index][2])} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={effect_mapping}/>)
+    } else if (mode === 'Instrument') {
+    } else if (mode === 'Amp') {
       mode_content = (
-        <div><Amps onChange={(amp, index) => this.setValue('Amp', amp, index)} selection={serverState.Amp}/>
-          <AmpType onChange={(type, index) => this.setValue('amptype', type, index)} selection={serverState.amptype}/>
+        <div><Amps onChange={(amp, index) => this.setValue('Amp', index, index)} selection={serverState.Amp}/>
+          <AmpType onChange={(type, index) => this.setValue('amptype', index, index)} selection={serverState.amptype}/>
           <AmpParameters values={serverState} onChange={(param, value) => this.setValue(param, value)}/>
         </div>
       )
@@ -472,7 +476,7 @@ export class InsideApp extends Component {
       <div className="PiveyApp">
         {this.state.mode}
         <header>
-          <Modes onChange={this.setMode} selection={this.state.mode}/>
+          <Modes onChange={this.setMode} selection={this.state.mode_index}/>
         </header>
 
         {mode_content}
