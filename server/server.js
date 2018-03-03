@@ -40,7 +40,7 @@ function send_command(data) {
     console.log("Warning: not sending MIDI command: ",data);
     return;
   }
-  console.log("Writing: " + data)
+  console.log("Writing to midi: " + data)
   command_process.stdin.write(data + "\n")
 }
 
@@ -93,44 +93,68 @@ var save = _.throttle(function() {
   fs.writeFileSync("state.json",JSON.stringify(state,null,'  '));
 },1000)
 
-const known_controls = {
-    "Pre-Gain" : 16,
-    "Low": 17,
-    "Mid" : 18,
-    "High" : 19,
-    "Post-Gain" : 20,
-    "P1" : 27,
-    "P2" : 26,
-    "Delay Feedback" : 21,
-    "Delay Level" : 23,
-    "Reverb" : 31,
-    "Effect" : 10,
-    "Amp" : 8,
-    "Inst/Stomp" : 11
-}
+const known_controls = {"Low": {"config_index": 11, "control": 17}, "Pre-Gain": {"config_index": 17, "control": 16}, "P1": {"config_index": 27, "control": 27}, "Effect": {"config_index": null, "control": 10}, "amptype": {"config_index": null, "control": 12}, "Delay Level": {"config_index": 39, "control": 23}, "High": {"config_index": 15, "control": 19}, "P2": {"config_index": 29, "control": 26}, "Delay Feedback": {"config_index": 35, "control": 21}, "Amp": {"config_index": null, "control": 8}, "Post-Gain": {"config_index": 19, "control": 20}, "Reverb": {"config_index": 21, "control": 31}, "Mid": {"config_index": 13, "control": 18}, "Inst/Stomp": {"config_index": null, "control": 11}}
+
 var id_to_name = {}
 for(key in known_controls) {
-  id_to_name[known_controls[key]] = key
+  id_to_name[known_controls[key].control] = key
+}
+
+function refresh_state_from_amp() {
+  console.log("Sending refresh command to amp")
+  const prefix = [ 0x00, 0x00, 0x1B, 0x12, 0x00];
+  send_command({type: 'sysex', data: prefix.concat([0x63,0x7f,0x7f]) })
+}
+
+function parse_sysex(data) {
+  console.log("SYSEX: ", JSON.stringify(data))
+  for(key in known_controls) {
+    var control = known_controls[key]
+    if(!control.config_index) {
+      continue
+    }
+    var value = 
+      data.data[control.config_index-0] +
+      data.data[control.config_index-1] * 16;
+    console.log("Key: ",key," = ",value)
+      console.log([
+      (data.data[control.config_index-0] << 0),
+      (data.data[control.config_index-1] << 0)
+      ])
+    if(state[key] != value) {
+      setState(key,value)
+    }
+  }
+}
+
+function setState(key,value) {
+  state[key] = value;
+  var toemit = {
+    key: key,
+    value: value
+  }
+  io.emit('set',toemit)
+  save();
 }
 
 function on_midi(data) {
+  if(data.type === 'sysex') {
+    return parse_sysex(data);
+  }
   if(data.type !== 'control_change') {
+    console.log("Unknown midi stream: " + JSON.stringify(data))
     return
   }
+  // XXXX
+  return
   console.log(data)
   var key = id_to_name[data.control]
   if(!key) {
-    console.log("Warning: known control changed: " + JSON.stringify(data))
-    console.log(id_to_name)
+    console.log("Warning: from midi unknown control changed: " + JSON.stringify(data))
     return;
   }
-  console.log("Setting: " + key);
-  state[key] = data.value / 127 * 10.0
-  var toemit = {
-    key: key,
-    value: state[key]
-  }
-  io.emit('set',toemit)
+  console.log("Setting from midi: " + key);
+  setState(key,data.value)
 }
 
 io.on('connection', function(socket) {
@@ -143,19 +167,31 @@ io.on('connection', function(socket) {
 
     var control = known_controls[values.key]
     if(control) {
+      var value;
+      if(values.midi) {
+        value = values.midi
+      } else {
+	value = parseInt(values.value)
+      }
+
       send_command({
         type: 'control_change',
-	control: control,
-	value: parseInt(values.value / 10.0 * 127)
+	control: control.control,
+	value: value
       })
     }
-
-    if(values.midi) {
-      send_command(values.midi);
+    const side_effect_controls = ['amptype','Effect','Amp']
+    if(side_effect_controls.includes(values.key)) {
+      refresh_state_from_amp()
     }
+
+    //if(values.midi) {
+     // send_command(values.midi);
+    //}
     socket.broadcast.emit('set', values);
     save();
   });
 });
 
+refresh_state_from_amp()
 console.log("READY")
