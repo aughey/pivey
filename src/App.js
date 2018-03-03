@@ -63,12 +63,12 @@ class ButtonSelector extends React.PureComponent {
     if (this.title()) {
       title = <h1>{this.title()}</h1>
     }
-    var buttons = this.options().map((p) => {
+    var buttons = this.options().map((p, index) => {
       var c = "btn";
       if (this.props.selection === p) {
         c = c + " btn-success"
       }
-      return <button key={p} className={c} onClick={() => this.props.onChange(p)}>{this.prefix()} {p}</button>
+      return <button key={p} className={c} onClick={() => this.props.onChange(p, index)}>{this.prefix()} {p}</button>
     })
     return (
       <div>
@@ -154,8 +154,10 @@ export default class App extends Component {
       this.setState({serverState: s});
     })
     this.socket.on('set', (s) => {
+      var data = {}
+      data[s.key] = s.value;
       this.setState({
-        serverState: Object.assign(this.state.serverState, s)
+        serverState: Object.assign(this.state.serverState, data)
       });
     })
 
@@ -193,14 +195,17 @@ class ParameterMapper extends React.PureComponent {
     }
     var values = {}
 
+    console.log(p1)
+    console.log(serverState)
     if (params[1].length !== 0) {
-      values[params[0]] = serverState[p1]
-      values[params[1]] = serverState[p2]
+      values[params[1][0]] = serverState[p1]
+      values[params[1][1]] = serverState[p2]
     }
+    console.log(values)
     return (
       <div>
-        <ButtonSelector onChange={this.props.onChangeType} title={this.props.title} selection={serverState[parameter_key]} options={effect_mapping.map((e) => e[0])}/>
-        <Parameters values={values} onChange={(param, value) => this.props.onChangeParameter(param === params[0]
+        <ButtonSelector onChange={(t, index) => this.props.onChangeType(t, index)} title={this.props.title} selection={serverState[parameter_key]} options={effect_mapping.map((e) => e[0])}/>
+        <Parameters values={values} onChange={(param, value) => this.props.onChangeParameter(param === params[1][0]
           ? p1
           : p2, value)} parameters={params[1]}/>
       </div>
@@ -228,12 +233,17 @@ export class InsideApp extends Component {
     }
   }
 
-  setValue = (key, value) => {
-    var obj = {}
-    obj[key] = value;
+  setValue = (key, value, midi) => {
+    var obj = {
+      key: key,
+      value: value,
+      midi: midi
+    }
     this.props.socket.emit('set', obj);
+    var newstate = {}
+    newstate[key] = value
     this.setState({
-      serverState: Object.assign(this.state.serverState, obj)
+      serverState: Object.assign(this.state.serverState, newstate)
     })
   }
 
@@ -355,16 +365,22 @@ export class InsideApp extends Component {
       ]}/>
 
     } else if (mode === 'Effect') {
-      mode_content = <ParameterMapper serverState={serverState} parameterKey="effect" title="Effect" paramPrefix="" onChangeType={(v) => this.setValue('effect', v)} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={[
+      var effect_mapping = [
         ["BYPASS", []
         ],
         [
           "Tremolo",
-          ["Speed", "Depth"]
+          [
+            "Speed", "Depth"
+          ],
+          1
         ],
         [
           "Octaver",
-          ["Mix", "Octave Level"]
+          [
+            "Mix", "Octave Level"
+          ],
+          2
         ],
         [
           "Phaser",
@@ -402,8 +418,12 @@ export class InsideApp extends Component {
           "Chorus",
           ["Speed", "Depth"]
         ]
-      ]}/>
-
+      ]
+      mode_content = (<ParameterMapper serverState={serverState} parameterKey="effect" title="Effect" paramPrefix="" onChangeType={(v, index) => this.setValue('effect', v, {
+        type: 'control_change',
+        control: 10,
+        value: effect_mapping[index][2]
+      })} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={effect_mapping}/>)
     } else if (mode === 'Instrument') {} else if (mode === 'Amp') {
       mode_content = <Instrument/>
       mode_content = (

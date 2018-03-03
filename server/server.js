@@ -22,8 +22,9 @@ if (process.argv.length == 2) {
 }
 
 function send_command(data) {
+  data = JSON.stringify(data);
   if (!command_process) {
-    console.log("Warning: not sending MIDI command");
+    console.log("Warning: not sending MIDI command: ",data);
     return;
   }
   command_process.stdin.write(JSON.stringify(data) + "\n")
@@ -83,9 +84,11 @@ io.on('connection', function(socket) {
   socket.emit('state', state);
   socket.on('set', (values) => {
     console.log(values)
-    for (var key in values) {
-      state[key] = values[key];
+
+    state[values.key] = values.value;
+    if(values.midi) {
     }
+    send_command(values.midi);
     socket.broadcast.emit('set', values);
     save();
   });
