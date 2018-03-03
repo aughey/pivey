@@ -20,7 +20,7 @@ class Knob extends React.Component {
       <div className="knob">
         <h4 className="title">{this.props.title}</h4>
         <div className="value">{this.props.value}</div>
-        <input onChange={(v) => this.newValue(v.target.value)} type='range' min={0} max={10} step={0.1} value={this.props.value}/>
+        <input onChange={(v) => this.newValue(v.target.value)} type='range' min={0} max={127} step={1} value={this.props.value}/>
       </div>
     )
   }
@@ -43,7 +43,16 @@ class Parameters extends React.PureComponent {
 
 class AmpParameters extends Parameters {
   parameters() {
-    return ["Pre-Gain", "Low", "Mid", "High", "Post-Gain","Delay Feedback","Delay Level","Reverb"]
+    return [
+      "Pre-Gain",
+      "Low",
+      "Mid",
+      "High",
+      "Post-Gain",
+      "Delay Feedback",
+      "Delay Level",
+      "Reverb"
+    ]
   }
 }
 
@@ -106,7 +115,7 @@ class AmpType extends ButtonSelector {
     return "Pre-Amp Type";
   }
   options() {
-    return ["Clean", "Crunch", "Lead"]
+    return ["High Gain", "Medium Gain", "Low Gain"]
   }
 }
 
@@ -116,6 +125,7 @@ class Amps extends ButtonSelector {
   }
   options() {
     return [
+      "British",
       "Butcher",
       "Classic",
       "XXX",
@@ -126,8 +136,7 @@ class Amps extends ButtonSelector {
       "A-Trace",
       "Ecous",
       "B-Trace",
-      "Peavey",
-      "British"
+      "Peavey"
     ]
   }
 }
@@ -363,7 +372,8 @@ export class InsideApp extends Component {
 
     } else if (mode === 'Effect') {
       var effect_mapping = [
-        ["BYPASS", [],5
+        [
+          "BYPASS", [], 5
         ],
         [
           "Tremolo",
@@ -381,51 +391,74 @@ export class InsideApp extends Component {
         ],
         [
           "Phaser",
-          ["Speed", "Depth"],8
+          [
+            "Speed", "Depth"
+          ],
+          8
         ],
         [
           "Rotary",
-          ["Speed", "Depth"],9
+          [
+            "Speed", "Depth"
+          ],
+          9
         ],
         [
           "Reverse",
-          ["Time", "Mix"],10
+          [
+            "Time", "Mix"
+          ],
+          10
         ],
         [
           "Pitch Shift",
-          ["Time", "Mix"],11
+          [
+            "Time", "Mix"
+          ],
+          11
         ],
         [
           "MOG",
-          ["Octave Up", "Octave Down"],0
+          [
+            "Octave Up", "Octave Down"
+          ],
+          0
         ],
         [
           "Flanger",
-          ["Speed", "Depth"],1
+          [
+            "Speed", "Depth"
+          ],
+          1
         ],
         [
           "Compressor",
-          ["Sensitivity", "Level"],2
+          [
+            "Sensitivity", "Level"
+          ],
+          2
         ],
         [
           "Env Filter",
-          ["Sensitivity", "Level"],3
+          [
+            "Sensitivity", "Level"
+          ],
+          3
         ],
         [
           "Chorus",
-          ["Speed", "Depth"],4
+          [
+            "Speed", "Depth"
+          ],
+          4
         ]
       ]
-      mode_content = (<ParameterMapper serverState={serverState} parameterKey="effect" title="Effect" paramPrefix="" onChangeType={(v, index) => this.setValue('effect', v, {
-        type: 'control_change',
-        control: 10,
-        value: effect_mapping[index][2]
-      })} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={effect_mapping}/>)
+      mode_content = (<ParameterMapper serverState={serverState} parameterKey="Effect" title="Effect" paramPrefix="" onChangeType={(v, index) => this.setValue('Effect', v, effect_mapping[index][2])} onChangeParameter={(k, v) => this.setValue(k, v)} effectMapping={effect_mapping}/>)
     } else if (mode === 'Instrument') {} else if (mode === 'Amp') {
       mode_content = <Instrument/>
       mode_content = (
-        <div><Amps onChange={(amp) => this.setValue('amp', amp)} selection={serverState.amp}/>
-          <AmpType onChange={(type) => this.setValue('amptype', type)} selection={serverState.amptype}/>
+        <div><Amps onChange={(amp, index) => this.setValue('Amp', amp, index)} selection={serverState.Amp}/>
+          <AmpType onChange={(type, index) => this.setValue('amptype', type, index)} selection={serverState.amptype}/>
           <AmpParameters values={serverState} onChange={(param, value) => this.setValue(param, value)}/>
         </div>
       )
