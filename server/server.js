@@ -93,7 +93,7 @@ var save = _.throttle(function() {
   fs.writeFileSync("state.json",JSON.stringify(state,null,'  '));
 },1000)
 
-const known_controls = {"Low": {"config_index": 11, "control": 17}, "Pre-Gain": {"config_index": 17, "control": 16}, "P1": {"config_index": 27, "control": 27}, "Effect": {"config_index": null, "control": 10}, "amptype": {"config_index": null, "control": 12}, "Delay Level": {"config_index": 39, "control": 23}, "High": {"config_index": 15, "control": 19}, "P2": {"config_index": 29, "control": 26}, "Delay Feedback": {"config_index": 35, "control": 21}, "Amp": {"config_index": null, "control": 8}, "Post-Gain": {"config_index": 19, "control": 20}, "Reverb": {"config_index": 21, "control": 31}, "Mid": {"config_index": 13, "control": 18}, "Inst/Stomp": {"config_index": null, "control": 11}}
+const known_controls = {"Delay Level": {"control": 23, "config_index": null}, "P1": {"control": 27, "config_index": null}, "High": {"control": 19, "config_index": null}, "Delay Feedback": {"control": 21, "config_index": null}, "amptype": {"control": 12, "config_index": null}, "Amp": {"control": 8, "config_index": null}, "SB_P2": {"control": 24, "config_index": null}, "Pre-Gain": {"control": 16, "config_index": null}, "SB_P1": {"control": 25, "config_index": null}, "Post-Gain": {"control": 20, "config_index": null}, "P2": {"control": 26, "config_index": null}, "Reverb": {"control": 31, "config_index": null}, "Mid": {"control": 18, "config_index": null}, "Low": {"control": 17, "config_index": null}, "Effect": {"control": 10, "config_index": null}, "stompbox": {"control": 11, "config_index": null}}
 
 var id_to_name = {}
 for(key in known_controls) {
@@ -146,7 +146,6 @@ function on_midi(data) {
     return
   }
   // XXXX
-  return
   console.log(data)
   var key = id_to_name[data.control]
   if(!key) {
@@ -155,6 +154,14 @@ function on_midi(data) {
   }
   console.log("Setting from midi: " + key);
   setState(key,data.value)
+  checkSideEffect(key);
+}
+
+function checkSideEffect(key) {
+  const side_effect_controls = ['amptype','Effect','Amp']
+  if(side_effect_controls.includes(key)) {
+    refresh_state_from_amp()
+  }
 }
 
 io.on('connection', function(socket) {
@@ -180,10 +187,7 @@ io.on('connection', function(socket) {
 	value: value
       })
     }
-    const side_effect_controls = ['amptype','Effect','Amp']
-    if(side_effect_controls.includes(values.key)) {
-      refresh_state_from_amp()
-    }
+    checkSideEffect(values.key)
 
     //if(values.midi) {
      // send_command(values.midi);
