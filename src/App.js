@@ -43,7 +43,7 @@ class Parameters extends React.PureComponent {
 
 class AmpParameters extends Parameters {
   parameters() {
-    return ["Pre-Gain", "Low", "Mid", "High", "Post-Gain"]
+    return ["Pre-Gain", "Low", "Mid", "High", "Post-Gain","Delay Feedback","Delay Level","Reverb"]
   }
 }
 
@@ -149,7 +149,7 @@ export default class App extends Component {
     }
   }
   componentDidMount() {
-    this.socket = io();
+    this.socket = io("192.168.0.116:8080");
     this.socket.on('state', (s) => {
       this.setState({serverState: s});
     })
@@ -195,13 +195,10 @@ class ParameterMapper extends React.PureComponent {
     }
     var values = {}
 
-    console.log(p1)
-    console.log(serverState)
     if (params[1].length !== 0) {
       values[params[1][0]] = serverState[p1]
       values[params[1][1]] = serverState[p2]
     }
-    console.log(values)
     return (
       <div>
         <ButtonSelector onChange={(t, index) => this.props.onChangeType(t, index)} title={this.props.title} selection={serverState[parameter_key]} options={effect_mapping.map((e) => e[0])}/>
@@ -366,57 +363,57 @@ export class InsideApp extends Component {
 
     } else if (mode === 'Effect') {
       var effect_mapping = [
-        ["BYPASS", []
+        ["BYPASS", [],5
         ],
         [
           "Tremolo",
           [
             "Speed", "Depth"
           ],
-          1
+          6
         ],
         [
           "Octaver",
           [
             "Mix", "Octave Level"
           ],
-          2
+          7
         ],
         [
           "Phaser",
-          ["Speed", "Depth"]
+          ["Speed", "Depth"],8
         ],
         [
           "Rotary",
-          ["Speed", "Depth"]
+          ["Speed", "Depth"],9
         ],
         [
           "Reverse",
-          ["Time", "Mix"]
+          ["Time", "Mix"],10
         ],
         [
           "Pitch Shift",
-          ["Time", "Mix"]
+          ["Time", "Mix"],11
         ],
         [
           "MOG",
-          ["Octave Up", "Octave Down"]
+          ["Octave Up", "Octave Down"],0
         ],
         [
           "Flanger",
-          ["Speed", "Depth"]
+          ["Speed", "Depth"],1
         ],
         [
           "Compressor",
-          ["Sensitivity", "Level"]
+          ["Sensitivity", "Level"],2
         ],
         [
           "Env Filter",
-          ["Sensitivity", "Level"]
+          ["Sensitivity", "Level"],3
         ],
         [
           "Chorus",
-          ["Speed", "Depth"]
+          ["Speed", "Depth"],4
         ]
       ]
       mode_content = (<ParameterMapper serverState={serverState} parameterKey="effect" title="Effect" paramPrefix="" onChangeType={(v, index) => this.setValue('effect', v, {
