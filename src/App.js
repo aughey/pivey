@@ -158,7 +158,7 @@ export default class App extends Component {
     }
   }
   componentDidMount() {
-    this.socket = io("192.168.0.116:8080");
+    this.socket = io();
     this.socket.on('state', (s) => {
       this.setState({serverState: s});
     })
