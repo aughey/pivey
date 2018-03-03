@@ -1,6 +1,7 @@
 import mido
 import sys
 import time
+import json
 
 midi_name = None
 for name in mido.get_input_names():
@@ -14,4 +15,5 @@ if not midi_name:
 input = mido.open_input(midi_name)
 
 for msg in input:
-   print(msg)
+   print(json.dumps(msg.dict()))
+   sys.stdout.flush()
