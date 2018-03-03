@@ -107,7 +107,7 @@ function refresh_state_from_amp() {
 }
 
 function parse_sysex(data) {
-  console.log("SYSEX: ", JSON.stringify(data))
+  //console.log("SYSEX: ", JSON.stringify(data))
   for(key in known_controls) {
     var control = known_controls[key]
     if(!control.config_index) {
@@ -116,11 +116,11 @@ function parse_sysex(data) {
     var value = 
       data.data[control.config_index-0] +
       data.data[control.config_index-1] * 16;
-    console.log("Key: ",key," = ",value)
-      console.log([
-      (data.data[control.config_index-0] << 0),
-      (data.data[control.config_index-1] << 0)
-      ])
+    //console.log("Key: ",key," = ",value)
+     // console.log([
+//      (data.data[control.config_index-0] << 0),
+//      (data.data[control.config_index-1] << 0)
+//      ])
     if(state[key] != value) {
       setState(key,value)
     }
