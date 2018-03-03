@@ -93,7 +93,7 @@ var save = _.throttle(function() {
   fs.writeFileSync("state.json",JSON.stringify(state,null,'  '));
 },1000)
 
-const known_controls = {"Delay Level": {"control": 23, "config_index": null}, "P1": {"control": 27, "config_index": null}, "High": {"control": 19, "config_index": null}, "Delay Feedback": {"control": 21, "config_index": null}, "amptype": {"control": 12, "config_index": null}, "Amp": {"control": 8, "config_index": null}, "SB_P2": {"control": 24, "config_index": null}, "Pre-Gain": {"control": 16, "config_index": null}, "SB_P1": {"control": 25, "config_index": null}, "Post-Gain": {"control": 20, "config_index": null}, "P2": {"control": 26, "config_index": null}, "Reverb": {"control": 31, "config_index": null}, "Mid": {"control": 18, "config_index": null}, "Low": {"control": 17, "config_index": null}, "Effect": {"control": 10, "config_index": null}, "stompbox": {"control": 11, "config_index": null}}
+const known_controls = {"Post-Gain": {"config_index": 19, "control": 20}, "stompbox": {"config_index": null, "control": 11}, "Effect": {"config_index": null, "control": 10}, "High": {"config_index": 15, "control": 19}, "Delay Feedback": {"config_index": 35, "control": 21}, "P1": {"config_index": 27, "control": 27}, "P2": {"config_index": 29, "control": 26}, "SB_P1": {"config_index": 45, "control": 25}, "Reverb": {"config_index": 21, "control": 31}, "Low": {"config_index": 11, "control": 17}, "amptype": {"config_index": null, "control": 12}, "Amp": {"config_index": null, "control": 8}, "Delay Level": {"config_index": 39, "control": 23}, "SB_P2": {"config_index": 47, "control": 24}, "Pre-Gain": {"config_index": 17, "control": 16}, "Mid": {"config_index": 13, "control": 18}}
 
 var id_to_name = {}
 for(key in known_controls) {
@@ -118,10 +118,12 @@ function parse_sysex(data) {
       data.data[control.config_index-1] * 16;
     //console.log("Key: ",key," = ",value)
      // console.log([
-//      (data.data[control.config_index-0] << 0),
-//      (data.data[control.config_index-1] << 0)
-//      ])
+      //(data.data[control.config_index-0] << 0),
+     // (data.data[control.config_index-1] << 0)
+     // ])
     if(state[key] != value) {
+      console.log("Pushing key ",key," to clients ",value)
+      console.log("Because " + state[key] + " !== " + value)
       setState(key,value)
     }
   }
@@ -158,7 +160,7 @@ function on_midi(data) {
 }
 
 function checkSideEffect(key) {
-  const side_effect_controls = ['amptype','Effect','Amp']
+  const side_effect_controls = ['amptype','Effect','Amp','stompbox']
   if(side_effect_controls.includes(key)) {
     refresh_state_from_amp()
   }
