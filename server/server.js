@@ -1,4 +1,5 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var _ = require('underscore');
@@ -6,6 +7,8 @@ var readline = require('readline')
 var fs = require('fs')
 const {spawn} = require('child_process');
 var bodyParser = require('body-parser');
+
+app.use(express.static("../build"))
 
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/x-www-form-urlencoded
